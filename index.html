@@ -46,15 +46,16 @@
   }
   .hero-logo{
     position: absolute;
-    top: 26px;
-    left: 22px;
+    top: 52px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 100px;
     height: auto;
     opacity: 0.95;
   }
   @media (max-width: 480px){
     .hero{ padding-top: 104px; }
-    .hero-logo{ width: 70px; top: 22px; left: 14px; }
+    .hero-logo{ width: 70px; top: 45px; }
   }
   .hero .venue{
     text-transform: none;
@@ -447,6 +448,71 @@
     border-color: var(--gold);
   }
 
+  .pw-overlay{
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .pw-overlay.show{ display: flex; }
+  .pw-card{
+    background: var(--charcoal);
+    border: 1px solid var(--line);
+    padding: 24px;
+    width: 280px;
+    max-width: 88vw;
+    border-radius: 4px;
+  }
+  .pw-title{
+    font-family: 'Roboto', sans-serif;
+    color: var(--ivory);
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+  .pw-input{
+    width: 100%;
+    background: var(--ink);
+    border: 1px solid var(--line);
+    color: var(--ivory);
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: 'Roboto', sans-serif;
+    border-radius: 3px;
+    box-sizing: border-box;
+  }
+  .pw-input:focus{ outline: none; border-color: var(--gold); }
+  .pw-error{
+    display: none;
+    color: #e08a84;
+    font-size: 12.5px;
+    margin-top: 8px;
+  }
+  .pw-error.show{ display: block; }
+  .pw-buttons{
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .pw-buttons button{
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ivory-dim);
+  }
+  .pw-submit{
+    background: var(--gold) !important;
+    color: var(--ink) !important;
+    border-color: var(--gold) !important;
+  }
+
   body.edit-mode [data-editable]{
     outline: 1px dashed rgba(184,146,90,0.55);
     outline-offset: 3px;
@@ -498,10 +564,22 @@
   <button class="primary" id="export-btn">Descargar cambios</button>
 </div>
 
+<div class="pw-overlay" id="pw-overlay">
+  <div class="pw-card">
+    <div class="pw-title">Contraseña para editar</div>
+    <input type="password" id="pw-input" class="pw-input" autocomplete="off">
+    <div class="pw-error" id="pw-error">Contraseña incorrecta.</div>
+    <div class="pw-buttons">
+      <button class="pw-cancel" id="pw-cancel">Cancelar</button>
+      <button class="pw-submit" id="pw-submit">Entrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="hero">
   <img src="IMG:logo_tbk" class="hero-logo" alt="The Blues Kitchen">
-  <div class="meta" data-editable>Propuesta de producción técnica <span>·</span> The Blues Kitchen</div>
-  <h1><span data-editable style="font-size: 0.66em; white-space: nowrap;">METROFRENOSCOL S.A.S</span></h1>
+  <div class="meta" data-editable style="color: var(--ivory);">Propuesta de producción técnica</div>
+  <h1><span data-editable style="font-size: 0.66em; white-space: nowrap; color: var(--ivory);">METROFRENOSCOL S.A.S</span></h1>
 </div>
 
 <div class="wrap">
@@ -792,17 +870,42 @@ function setEditable(on){
 
 let editing = false;
 const EDIT_PASSWORD = "TBK2026";
+const pwOverlay = document.getElementById('pw-overlay');
+const pwInput = document.getElementById('pw-input');
+const pwError = document.getElementById('pw-error');
+const pwSubmit = document.getElementById('pw-submit');
+const pwCancel = document.getElementById('pw-cancel');
+
+function openPwModal(){
+  pwError.classList.remove('show');
+  pwInput.value = '';
+  pwOverlay.classList.add('show');
+  pwInput.focus();
+}
+function closePwModal(){
+  pwOverlay.classList.remove('show');
+}
+function tryUnlock(){
+  if(pwInput.value === EDIT_PASSWORD){
+    closePwModal();
+    editing = true;
+    setEditable(true);
+  } else {
+    pwError.classList.add('show');
+  }
+}
+pwSubmit.addEventListener('click', tryUnlock);
+pwCancel.addEventListener('click', closePwModal);
+pwInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') tryUnlock(); });
+pwOverlay.addEventListener('click', (e)=>{ if(e.target === pwOverlay) closePwModal(); });
+
 editToggle.addEventListener('click', ()=>{
   if(!editing){
-    const attempt = window.prompt('Contraseña para editar:');
-    if(attempt === null) return;
-    if(attempt !== EDIT_PASSWORD){
-      window.alert('Contraseña incorrecta.');
-      return;
-    }
+    openPwModal();
+    return;
   }
-  editing = !editing;
-  setEditable(editing);
+  editing = false;
+  setEditable(false);
 });
 
 document.querySelectorAll('.opt-card img, .toggle-row img, .qty-row img').forEach(img=>{
